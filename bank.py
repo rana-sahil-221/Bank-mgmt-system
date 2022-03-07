@@ -1,5 +1,6 @@
 import mysql.connector
 from datetime import date
+from datetime import datetime
 import time
 
 def clean():
@@ -31,6 +32,7 @@ def add_acc():
         print("Customer added succesfully!!")
     except mysql.connector.Error as err:
         print("Something went wrong {}".format(err))
+    mydb.close()
 
 def modify_acc():
     try:
@@ -47,7 +49,9 @@ def modify_acc():
     try:
 
         a_no = input("Enter your account number: ")
-        print("---------------------Customer Information Modification------------------")
+        print("-"*130)
+        print("Customer Information Modification")
+        print("-"*130)
         print("1) Update your Name")
         print("2) Update your Contact number ")
         print("3) Update your Address")
@@ -72,6 +76,112 @@ def modify_acc():
         print("Customer information updated successfully")
     except mysql.connector.Error as e:
         print("There is a problem updating the information!!{}".format(e))
+    mydb.close()
+
+def close_acc():
+    try:
+        mydb = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="altolxi@968",
+            database="bankdb",
+        )
+        mycursor = mydb.cursor()
+        print("------------------------ACCOUNT CLOSING----------------------------------")
+
+        ac = int(input("Enter account number: "))
+        sql='update customer set stat = "Closed" where ac_no='+ac+';'
+        print("Closing your account, please wait......")
+        time.sleep(2)
+        mycursor.execute(sql)
+        print("Account closed")
+        mydb.commit()
+    except ValueError as a:
+        print("Enter account number in digit only!!!")
+    except mysql.connector.Error as e:
+        print("Not able to establish a connection {}".format(e))
+    mydb.close()
+
+def transactions():
+    clean()
+    try:
+        print("-"*130)
+        print("                                                 TRANSACTIONS MENU                                            ")
+        print("-"*130)
+        print("1) Deposit Cash")
+        print("2) Withdraw Cash")
+        print("3) Return to Main Menu")
+        ch = int(input("Enter your choice: "))
+        if ch == 1:
+            deposit()
+        if ch == 2:
+            withdraw()
+        if ch == 3:
+            Menu()
+    except ValueError:
+        print("Please enter choice in digit only!!!")
+
+def ac_status(ac):
+    mydb = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="altolxi@968",
+        database="bankdb",
+    )
+    mycursor = mydb.cursor()
+
+    sql = 'select stat,balance from customer where ac_no="'+ac+'";'
+    result = mycursor.execute(sql)
+    result = mycursor.fetchone()
+    mydb.close()
+    return result
+
+
+def deposit():
+    clean()
+    try:
+        mydb=mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="altolxi@968",
+            database="bankdb",
+        )
+        mycursor = mydb.cursor()
+        print("-"*130)
+        print("                                                          DEPOSIT YOUR CASH                                      ")
+        print("-"*130)
+        today = datetime.today().strftime('%Y-%m-%d')
+        ac = input("Enter your account number: ")
+        amount = input("Enter amount in digits you want to deposit: ")
+        res = ac_status(ac)
+
+        if res[0] == 'active':
+            sql = 'update customer set balance=balance + "'+amount+'" where ac_no="'+ac+'" and stat="active";'
+            sql2='insert into transact(amount,t_type,dot,ac_no) values ("'+amount+'","deposit", "'+str(today)+'", "'+ac+'");'
+            print("Depositing your Cash, Please Wait........")
+            time.sleep(3)
+            mycursor.execute(sql2)
+            mycursor.execute(sql)
+            mydb.commit()
+            print("Your amount has been deposited! Thank you for using our services!")
+            mydb.close()
+        else:
+            print("Your amount is Suspended or Closed, Please visit your nearest branch")
+    except mysql.connector.Error as e:
+        print("Couldn't establish connection {}".format(e))
+    except ValueError:
+        print("Enter amount and account number in digits!!")
+
+    cl = input("Type Close to exit")
+    if cl == "close" or "Close":
+        Menu()
+
+
+
+
+
+
+
 
 
 
@@ -83,7 +193,9 @@ def modify_acc():
 def Menu():
     while True:
         #clean()
-        print("-------------------------------------------------BANK MANAGEMENT SYSTEM -----------------------------------------------------")
+        print("-"*150)
+        print("                                                   $ BANK MANAGEMENT SYSTEM $                                     ")
+        print("-"*150)
         print("1) Add new Account")
         print("2) Modify your account")
         print("3) Transactions")
