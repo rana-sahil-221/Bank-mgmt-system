@@ -2,6 +2,7 @@ import mysql.connector
 from datetime import date
 from datetime import datetime
 import time
+import sys
 
 def clean():
     for _ in range(64):
@@ -11,7 +12,7 @@ def add_acc():
     mydb=mysql.connector.connect(
         host="localhost",
         user="root",
-        password="altolxi@968",
+        password="admin123",
         database="bankdb",
     )
     mycursor=mydb.cursor()
@@ -39,7 +40,7 @@ def modify_acc():
         mydb=mysql.connector.connect(
             host="localhost",
             user="root",
-            password="altolxi@968",
+            password="admin123",
             database="bankdb"
         )
         mycursor = mydb.cursor()
@@ -83,7 +84,7 @@ def close_acc():
         mydb = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="altolxi@968",
+            password="admin123",
             database="bankdb",
         )
         mycursor = mydb.cursor()
@@ -94,7 +95,7 @@ def close_acc():
         print("Closing your account, please wait......")
         time.sleep(2)
         mycursor.execute(sql)
-        print("Account closed")
+        print("Account closed!!!")
         mydb.commit()
     except ValueError as a:
         print("Enter account number in digit only!!!")
@@ -125,7 +126,7 @@ def ac_status(ac):
     mydb = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="altolxi@968",
+        password="admin123",
         database="bankdb",
     )
     mycursor = mydb.cursor()
@@ -143,7 +144,7 @@ def deposit():
         mydb=mysql.connector.connect(
             host="localhost",
             user="root",
-            password="altolxi@968",
+            password="admin123",
             database="bankdb",
         )
         mycursor = mydb.cursor()
@@ -166,7 +167,7 @@ def deposit():
             print("Your amount has been deposited! Thank you for using our services!")
             mydb.close()
         else:
-            print("Your amount is Suspended or Closed, Please visit your nearest branch")
+            print("Your account is Suspended or Closed, Please visit your nearest branch")
     except mysql.connector.Error as e:
         print("Couldn't establish connection {}".format(e))
     except ValueError:
@@ -175,6 +176,92 @@ def deposit():
     cl = input("Type Close to exit")
     if cl == "close" or "Close":
         Menu()
+
+def withdraw():
+    try:
+        mydb = mysql.connector.connect(
+            host = "localhost",
+            user = "root",
+            password = "admin123",
+            database = "bankdb",
+        )
+        mycursor = mydb.cursor()
+        clean()
+        print("-"*130)
+        print("                                WITHDRAW CASH                               ")
+        print("-"*130)
+        today = datetime.today().strftime('%Y-%m-%d')
+        ac = input("Enter your account number: ")
+        amount = input("Enter amount: ")
+        res = ac_status(ac)
+        if res[0] == "active" and int(res[1]) >= int(amount):
+            sql = 'update customer set balance=balance - "'+amount+'" where ac_no = "'+ac+'" and stat="active";'
+            sql2 = 'insert into transact(amount,t_type,dot,ac_no) values ("'+amount+'", "withdraw", "'+str(today)+'", "'+ac+'");'
+            mycursor.execute(sql2)
+            mycursor.execute(sql)
+            print("Withdrawing Cash, Please wait....")
+            time.sleep(3)
+            mydb.commit()
+            print("Amount successfully debited from your account")
+            mydb.close()
+        else:
+            print("Insufficient Balance or your account is suspended/closed. Please contact your nearest branch")
+    except mysql.connector.Error as e:
+        print("Connection could not be established {}".format(e))
+    except ValueError:
+        print("Enter amount and account in digits!")
+    cl=input("Type close to exit")
+    if cl == "close" or "Close":
+        Menu()
+
+def search_menu():
+    try:
+        mydb = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="admin123",
+            database="bankdb",
+        )
+        mycursor=mydb.cursor()
+
+        print("-"*130)
+        print("                                       SEARCH YOUR INFORMATION                                 ")
+        print("-"*130)
+        ac = input("Enter your Account number: ")
+        sql = 'select * from customer where ac_no = "'+ac+'";'
+        mycursor.execute(sql)
+        result = mycursor.fetchmany(8)
+        n = len(result)
+        clean()
+        print("Fetching Data please wait....")
+        time.sleep(2)
+        print("                    DATA FOUND!!!                   ")
+        print("-"*100)
+        for i in result:
+            print("Name: ",i[1])
+            print("Email: ",i[2])
+            print("Phone number: ",i[3])
+            print("Aadhar number: ",i[4])
+            print("Address: ",i[5])
+            print("Account Type: ",i[6])
+            print("Available balance: ",i[7])
+            print("Account Status: ",i[8])
+        print("-"*100)
+
+        if n < 0:
+            print('Data does not exist in database!!!')
+        cl = input("Type close to exit")
+    except mysql.connector.Error as e:
+        print("Cannot establish connection {}".format(e))
+    except ValueError:
+        print("Please enter account number in digits only")
+    finally:
+        if cl == "close" or "Close":
+            Menu()
+        mydb.close()
+
+
+
 
 
 
@@ -219,7 +306,9 @@ def Menu():
         elif choice == 6:
             reports()
         elif choice == 7:
-            break
+            print("Exiting....")
+            time.sleep(2)
+            sys.exit()
 
 if __name__ == "__main__":
     Menu()
