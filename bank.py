@@ -8,27 +8,38 @@ def clean():
     for _ in range(64):
         print()
 
-def add_acc():
-    mydb=mysql.connector.connect(
-        host="localhost",
+def get_connection():
+    global mydb
+    mydb = mysql.connector.connect(
+        host = "localhost",
         user="root",
-        password="admin123",
-        database="bankdb",
+        password = "admin123",
+        database = "bankdb",
     )
-    mycursor=mydb.cursor()
+    global mycursor
+    mycursor = mydb.cursor()
+
+
+
+def add_acc():
     try:
+        get_connection()
         name = input("Enter your name: ")
         mail=input("Enter your email: ")
         ph=input("Enter phone number: ")
         adhar=input("Enter aadhar number: ")
         addr = input("Enter address: ")
-        acc_t=input("Saving or Current??")
+        acc_t=input("Saving or Current??  ")
         bal =input("Account opening balance: ")
 
-        sql = 'insert into customer(user_name,email,phone,aadhar_no,address,1' \
-              'acc_type,balance,stat) values ("' +name+ '", "'+mail+'", "'+ph+'","'+adhar+'","'+addr+'","'+acc_t+'","'+bal+'","active");'
+        sql = 'insert into customer(user_name,email,phone,aadhar_no,address,acc_type,balance,stat) values ("' +name+ '", "'+mail+'", "'+ph+'","'+adhar+'","'+addr+'","'+acc_t+'","'+bal+'","active");'
         mycursor.execute(sql)
         mydb.commit()
+        sql2 = 'select ac_no from customer where aadhar_no = "'+adhar+'";'
+        mycursor.execute(sql2)
+        res = mycursor.fetchone()
+        for i in res:
+            print("Account number alloted to you is: ",i)
         mydb.close()
         print("Customer added succesfully!!")
     except mysql.connector.Error as err:
@@ -37,18 +48,7 @@ def add_acc():
 
 def modify_acc():
     try:
-        mydb=mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="admin123",
-            database="bankdb"
-        )
-        mycursor = mydb.cursor()
-    except mysql.connector.Error as err:
-        print("Connection couldn't be established!{}".format(err))
-
-    try:
-
+        get_connection()
         a_no = input("Enter your account number: ")
         print("-"*130)
         print("Customer Information Modification")
@@ -81,13 +81,7 @@ def modify_acc():
 
 def close_acc():
     try:
-        mydb = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="admin123",
-            database="bankdb",
-        )
-        mycursor = mydb.cursor()
+        get_connection()
         print("------------------------ACCOUNT CLOSING----------------------------------")
 
         ac = int(input("Enter account number: "))
@@ -123,31 +117,18 @@ def transactions():
         print("Please enter choice in digit only!!!")
 
 def ac_status(ac):
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="admin123",
-        database="bankdb",
-    )
-    mycursor = mydb.cursor()
-
+    get_connection()
     sql = 'select stat,balance from customer where ac_no="'+ac+'";'
     result = mycursor.execute(sql)
     result = mycursor.fetchone()
-    mydb.close()
+    #mydb.close()
     return result
 
 
 def deposit():
     clean()
     try:
-        mydb=mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="admin123",
-            database="bankdb",
-        )
-        mycursor = mydb.cursor()
+        get_connection()
         print("-"*130)
         print("                                                          DEPOSIT YOUR CASH                                      ")
         print("-"*130)
@@ -179,13 +160,7 @@ def deposit():
 
 def withdraw():
     try:
-        mydb = mysql.connector.connect(
-            host = "localhost",
-            user = "root",
-            password = "admin123",
-            database = "bankdb",
-        )
-        mycursor = mydb.cursor()
+        get_connection()
         clean()
         print("-"*130)
         print("                                WITHDRAW CASH                               ")
@@ -216,14 +191,7 @@ def withdraw():
 
 def search_menu():
     try:
-        mydb = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="admin123",
-            database="bankdb",
-        )
-        mycursor=mydb.cursor()
-
+        get_connection()
         print("-"*130)
         print("                                       SEARCH YOUR INFORMATION                                 ")
         print("-"*130)
@@ -260,6 +228,88 @@ def search_menu():
             Menu()
         mydb.close()
 
+def reports():
+    print("-"*120)
+    print("                                     REPORTS MENU                                 ")
+    print("-"*120)
+    print("1) Daily Report")
+    print("2) Monthly Report")
+    print("3) Return to Menu")
+
+    choice  = int(input("Enter your choice: "))
+    if choice == 1:
+        daily()
+    if choice == 2:
+        monthly()
+    if choice == 3:
+        Menu()
+
+def daily():
+    try:
+        get_connection()
+        today = input("Enter date in 'Y-M-D' format: ")
+        sql = 'select tid,amount,t_type,dot,ac_no from transact where dot="'+today+'";'
+        mycursor.execute(sql)
+        result = mycursor.fetchall()
+        n = len(result)
+        print("Fetching reports, please wait.....")
+        time.sleep(2)
+        clean()
+        print("-"*120)
+        print("                          Daily Transaction Reports:                      ")
+        print("-"*120)
+        for i in result:
+            print("Transaction Id: ",i[0])
+            print("Amount: ",i[1])
+            print("Type: ",i[2])
+            print("Date: ",i[3])
+            print("Account number: ",i[4])
+
+        print("-"*120)
+        if (n < 0):
+            print("No result found for your query!!!")
+        cl = input("Type close to exit: ")
+        if cl == "close" or "Close":
+            Menu()
+    except mysql.connector.Error as e:
+        print("Cannot establish connection {}".format(e))
+    except ValueError:
+        print("Enter correct information")
+
+def monthly():
+    try:
+        get_connection()
+        month = input("Enter month number: ")
+        sql = 'select tid,amount,t_type,dot,ac_no from transact where month(dot)="'+month+'";'
+        mycursor.execute(sql)
+        result = mycursor.fetchall()
+        n = len(result)
+        print("Fetching report,please wait....")
+        time.sleep(2)
+        clean()
+        print("-"*120)
+        print("                                   Monthly Report                               ")
+        print("-"*120)
+        for i in result:
+            print("Transaction Id: ",i[0])
+            print("Amount: ",i[1])
+            print("Type: ",i[2])
+            print("Date: ",i[3])
+            print("Account Number: ",i[4])
+        print("-"*120)
+        if(n<0):
+            print("No data found!!!")
+        cl = input("Type Exit to close ")
+        if cl == "Exit" or "exit":
+            Menu()
+    except mysql.connector.Error as e:
+        print("Connection could not be established {}".format(e))
+    except ValueError:
+        print("Enter correct information!")
+
+
+
+
 
 
 
@@ -278,37 +328,42 @@ def search_menu():
 
 
 def Menu():
-    while True:
-        #clean()
-        print("-"*150)
-        print("                                                   $ BANK MANAGEMENT SYSTEM $                                     ")
-        print("-"*150)
-        print("1) Add new Account")
-        print("2) Modify your account")
-        print("3) Transactions")
-        print("4) Close your account")
-        print("5) Search")
-        print("6) Reports")
-        print("7) Close the application")
+    try:
+        while True:
+            #clean()
+            print("-"*150)
+            print("                                                   $ WELCOME TO THE  BANK MANAGEMENT SYSTEM $                                     ")
+            print("-"*150)
+            print("1) Add new Account")
+            print("2) Modify your account")
+            print("3) Transactions")
+            print("4) Close your account")
+            print("5) Search")
+            print("6) Reports")
+            print("7) Close the application")
 
-        choice = int(input("Enter your choice: "))
+            choice = int(input("Enter your choice: "))
 
-        if choice == 1:
-            add_acc()
-        elif choice == 2:
-            modify_acc()
-        elif choice == 3:
-            transactions()
-        elif choice == 4:
-            close_acc()
-        elif choice == 5:
-            search_menu()
-        elif choice == 6:
-            reports()
-        elif choice == 7:
-            print("Exiting....")
-            time.sleep(2)
-            sys.exit()
+            if choice == 1:
+                add_acc()
+            elif choice == 2:
+                modify_acc()
+            elif choice == 3:
+                transactions()
+            elif choice == 4:
+                close_acc()
+            elif choice == 5:
+                search_menu()
+            elif choice == 6:
+                reports()
+            elif choice == 7:
+                print("Thanks for using our services!")
+                print("Exiting....")
+                time.sleep(2)
+                sys.exit()
+    except ValueError:
+        print("Please choose from the options above!!")
+        Menu()
 
 if __name__ == "__main__":
     Menu()
